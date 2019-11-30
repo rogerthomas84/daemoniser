@@ -1,0 +1,21 @@
+{
+  "name": "rogerthomas84/daemoniser",
+  "description": "Daemoniser is a PHP library to help make daemon applications",
+  "keywords": [],
+  "homepage": "https://github.com/rogerthomas84/daemoniser",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Roger Thomas",
+      "email": "rogere84@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=5.0",
+    "ext-pcntl": "*",
+    "ext-posix": "*"
+  },
+  "autoload": {
+    "psr-0": { "Daemoniser": "src" }
+  }
+}

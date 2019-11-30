@@ -1,0 +1,11 @@
+build/*
+vendor/*
+.idea
+composer.lock
+.phpunit.result.cache
+test.php
+tmp/pid/*.pid
+tmp/log/*.log
+!tmp/pid/.gitkeep
+!tmp/log/.gitkeep
+
