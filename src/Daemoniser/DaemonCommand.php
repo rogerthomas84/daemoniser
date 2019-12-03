@@ -24,6 +24,7 @@ class DaemonCommand
         'rotateLogFile',
         'runWhilePidPresent',
         'canImmediatelyStop',
+        'shouldStop',
         'getPid',
         'isRunning',
         'echoLine',
