@@ -39,6 +39,11 @@ class DaemonConfig
     /**
      * @var string
      */
+    protected $softStopFilePath = null;
+
+    /**
+     * @var string
+     */
     protected $pidFilePath = null;
 
     /**
@@ -63,17 +68,19 @@ class DaemonConfig
      * @param string|null $errorLogFilePath (optional) defaults to `tmp/log/error_{class_name}.log`
      * @param string|null $infoLogFilePath (optional) defaults to `tmp/log/info_{class_name}.log`
      * @param string|null $pidFilePath (optional) defaults to `tmp/pid/{class_name}.pid`
+     * @param string|null $softStopFilePath (optional) defaults to `tmp/stops/stop_{class_name}.pid`
      * @param int $sleepDuration (optional) default 5
      * @param int $maxLogFileSize (optional) defaults to 100MB ((1024*1024))
      * @param array $iniSettings (optional) the ini_set settings to send.
      * @throws DaemonException
      */
-    public function __construct(DaemonAbstract $daemon, $errorLogFilePath=null, $infoLogFilePath=null, $pidFilePath=null, $sleepDuration=5, $maxLogFileSize=self::ONE_HUNDRED_MB, $iniSettings=[])
+    public function __construct(DaemonAbstract $daemon, $errorLogFilePath=null, $infoLogFilePath=null, $pidFilePath=null, $softStopFilePath=null, $sleepDuration=5, $maxLogFileSize=self::ONE_HUNDRED_MB, $iniSettings=[])
     {
         $this->daemon = $daemon;
         $this->setSleepBetweenRuns($sleepDuration);
         $this->setErrorLogFilePath($errorLogFilePath);
         $this->setInfoLogFilePath($infoLogFilePath);
+        $this->setSoftStopFilePath($softStopFilePath);
         $this->setPidFilePath($pidFilePath);
         $this->setMaxLogFileSize($maxLogFileSize);
         $this->setIniSettings($iniSettings);
@@ -224,6 +231,34 @@ class DaemonConfig
     }
 
     /**
+     * Set the path to the soft stop file.
+     *
+     * @param string $softStopFile
+     * @return $this
+     * @throws DaemonException
+     */
+    public function setSoftStopFilePath($softStopFile)
+    {
+        if ($softStopFile === null) {
+            $softStopFile = $this->getFileSystemResourceFile('stops', 'stop_', 'stop');
+        }
+        $this->checkProvidedFilePath($softStopFile, 'stop', 'stop');
+        $this->softStopFilePath = $softStopFile;
+
+        return $this;
+    }
+
+    /**
+     * Get the path to the log file for info logs.
+     *
+     * @return string
+     */
+    public function getSoftStopFilePath()
+    {
+        return $this->softStopFilePath;
+    }
+
+    /**
      * Set the path to the log file for error logs.
      *
      * @param string $errorLogFilePath
@@ -294,7 +329,7 @@ class DaemonConfig
                 sprintf('Error: %s file path is not writable at location "%s"', $typeName, $filePath)
             );
         }
-        if (substr($filePath, -4) !== '.' . $extension) {
+        if (substr($filePath, (-1-strlen($extension))) !== '.' . $extension) {
             throw new DaemonException(
                 sprintf('Error: %s file path must end in ".%s" - received "%s"', $typeName, $extension, $filePath)
             );

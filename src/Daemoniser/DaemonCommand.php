@@ -10,6 +10,8 @@ class DaemonCommand
     const INVALID_COMMANDS = [
         'start',
         'stop',
+        'soft-stop',
+        'softStop',
         'restart',
         'pid',
         'rm-logs',
@@ -21,6 +23,7 @@ class DaemonCommand
         'checkLogFileSize',
         'rotateLogFile',
         'runWhilePidPresent',
+        'canImmediatelyStop',
         'getPid',
         'isRunning',
         'echoLine',
@@ -61,6 +64,11 @@ class DaemonCommand
         if (in_array($command, self::INVALID_COMMANDS)) {
             throw new DaemonException(
                 sprintf('Invalid command. Cannot use "%s" as a command. It is protected', $command)
+            );
+        }
+        if (in_array($method, self::INVALID_COMMANDS)) {
+            throw new DaemonException(
+                sprintf('Invalid method name. Cannot use "%s" as a method. It is protected', $command)
             );
         }
 

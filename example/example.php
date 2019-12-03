@@ -39,12 +39,23 @@ class ExampleOneDaemon extends DaemonAbstract
             DaemonCommand::build('animal', 'Get a random animal.', 'randomAnimal')
         ];
     }
+
+    /**
+     * Can this daemon be immediately halted? This kills the pid.
+     *
+     * @return bool
+     */
+    protected function canImmediatelyStop()
+    {
+        return true;
+    }
 }
 
 try {
     $daemon = new ExampleOneDaemon();
     $config = new DaemonConfig(
         $daemon,
+        null,
         null,
         null,
         null,

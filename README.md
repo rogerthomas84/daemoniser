@@ -34,11 +34,13 @@ DaemonConfig constructor:
     * Optional, defaults to `tmp/log/info_My_Class_Name.log` (assuming fully qualified class name is `\My\Class\Name`)
 4) `$pidFilePath` / A full path to either a new or existing file to use for storing the pid of the dameon'd instance.
     * Optional, defaults to `tmp/pid/My_Class_Name.pid` (assuming fully qualified class name is `\My\Class\Name`)
-5) `$sleepDuration` / How long to sleep after each call to your `run()` method.
+5) `$softStopFilePath` / The path to the soft stop file.
+    * Optional, defaults to `tmp/stops/stop_My_Class_Name.log` (assuming fully qualified class name is `\My\Class\Name`)
+6) `$sleepDuration` / How long to sleep after each call to your `run()` method.
     * Optional, defaults to `5` seconds
-6) `$maxLogFileSize` / How large in bytes should your log file be allowed to get before
+7) `$maxLogFileSize` / How large in bytes should your log file be allowed to get before
     * Optional, defaults to `100000000` bytes, (100 MB)
-7) `$iniSettings` / A key => value array of settings to use with `ini_set`. For example, `['memory_limit' => '1024MB']`
+8) `$iniSettings` / A key => value array of settings to use with `ini_set`. For example, `['memory_limit' => '1024MB']`
     * Optional, defaults to empty array
 
 Usage
@@ -48,12 +50,20 @@ Daemoniser has several helpful commands.
 
 1) `php my-daemon.php status` - Get the status of the daemon
 2) `php my-daemon.php start` - Start the daemon
-3) `php my-daemon.php stop` - Stop the daemon
-4) `php my-daemon.php restart` - Restart the daemon
-5) `php my-daemon.php pid` - Get the PID for the daemon
-6) `php my-daemon.php rm-logs` - Delete historic logs for this daemon.
-7) `php my-daemon.php rm-logs all` - Delete **ALL** logs for this daemon.
-8) `php my-daemon.php help` - Show the help content
+3) `php my-daemon.php soft-stop` - Stop the daemon via a stop file gracefully.
+4) `php my-daemon.php stop` - Stop the daemon immediately (this is not ideal)
+5) `php my-daemon.php restart` - Restart the daemon (this is not ideal)
+6) `php my-daemon.php pid` - Get the PID for the daemon
+7) `php my-daemon.php rm-logs` - Delete historic logs for this daemon.
+8) `php my-daemon.php rm-logs all` - Delete **ALL** logs for this daemon.
+9) `php my-daemon.php help` - Show the help content
+
+You shouldn't ever use `stop` really. Doing so will result in the process being immediately killed. But this is less
+of a problem if you aren't running something that could result in data loss in the case of an immediate halt being
+called.
+
+If you 'must' have an immediate stop, you'll have to implement the `canImmediatelyStop()` method in your daemons
+and return `true`.
 
 Extending the commands:
 -----------------------
@@ -115,6 +125,14 @@ class ExampleOneDaemon extends DaemonAbstract
         return [
             DaemonCommand::build('animal', 'Get a random animal.', 'randomAnimal')
         ];
+    }
+    
+    /**
+     * @return bool
+     */
+    protected function canImmediatelyStop()
+    {
+        return true; // Can we just kill the process?
     }
 }
 

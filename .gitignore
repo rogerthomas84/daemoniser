@@ -6,6 +6,8 @@ composer.lock
 test.php
 tmp/pid/*.pid
 tmp/log/*.log
+tmp/stops/*.stop
 !tmp/pid/.gitkeep
+!tmp/stops/.gitkeep
 !tmp/log/.gitkeep
 

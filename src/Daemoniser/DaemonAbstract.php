@@ -85,6 +85,9 @@ abstract class DaemonAbstract
             case 'stop':
                 $this->stop();
                 break;
+            case 'soft-stop':
+                $this->softStop();
+                exit(0);
             case 'restart':
                 $this->restart();
                 break;
@@ -128,7 +131,8 @@ abstract class DaemonAbstract
                 $this->echoLine('');
                 $this->echoLine('    Standard commands:');
                 $this->echoLine(str_pad('start', $longestCustom+14, ' ', STR_PAD_LEFT) . ' - Start the process');
-                $this->echoLine(str_pad('stop', $longestCustom+14, ' ', STR_PAD_LEFT) . ' - Stop the process');
+                $this->echoLine(str_pad('soft-stop', $longestCustom+14, ' ', STR_PAD_LEFT) . ' - Stop the process via a stop file.');
+                $this->echoLine(str_pad('stop', $longestCustom+14, ' ', STR_PAD_LEFT) . ' - Stop the process immediately');
                 $this->echoLine(str_pad('restart', $longestCustom+14, ' ', STR_PAD_LEFT) . ' - Restart (stop and start) the process');
                 $this->echoLine(str_pad('status', $longestCustom+14, ' ', STR_PAD_LEFT) . ' - Get the status of the process');
                 $this->echoLine(str_pad('pid', $longestCustom+14, ' ', STR_PAD_LEFT) . ' - Get the pid of the process');
@@ -174,7 +178,7 @@ abstract class DaemonAbstract
      *
      * @throws DaemonException
      */
-    private function demonise()
+    final private function demonise()
     {
         $processIdentificationNumber = pcntl_fork();
         if ($processIdentificationNumber == -1) {
@@ -293,12 +297,33 @@ abstract class DaemonAbstract
             $sleep = 0;
         }
         while ($this->getPid() !== 0) {
+            if (file_exists($this->config->getSoftStopFilePath())) {
+                $rawPid = file_get_contents($this->config->getSoftStopFilePath());
+                if (false !== $rawPid && is_numeric($rawPid)) {
+                    if (intval($rawPid) === $this->getPid()) {
+                        unlink($this->config->getSoftStopFilePath());
+                        $this->stop(true);
+                        exit(0);
+                    }
+                }
+                unlink($this->config->getSoftStopFilePath());
+            }
             $this->run();
             $this->checkLogFileSize();
             if ($sleep > 0) {
                 sleep($sleep);
             }
         }
+    }
+
+    /**
+     * Can this daemon be immediately halted? This kills the pid.
+     *
+     * @return bool
+     */
+    protected function canImmediatelyStop()
+    {
+        return false;
     }
 
     /**
@@ -342,10 +367,17 @@ abstract class DaemonAbstract
 
     /**
      * Stop the daemon
+     * @param bool $immediate
+     * @return bool
      */
-    private function stop()
+    private function stop($immediate=false)
     {
         if ($this->isRunning()) {
+            if ($immediate !== true && $this->canImmediatelyStop() !== true) {
+                $this->softStop();
+                $this->echoLine('Error: Can not be stopped immediately. Scheduling via soft-stop. If you are restarting, you will need to call `status` and then `start` when the process has successfully ended.');
+                exit(1);
+            }
             if (posix_kill($this->getPid(), SIGTERM)) {
                 unlink($this->config->getPidFilePath());
                 $this->echoLine('Stopped');
@@ -357,6 +389,30 @@ abstract class DaemonAbstract
 
         $this->echoLine('Notice: Already stopped');
         return false;
+    }
+
+    /**
+     * Gracefully stop the process by writing a `.stop` file.
+     *
+     * @return bool
+     */
+    private function softStop()
+    {
+        if ($this->isRunning()) {
+            $write = @file_put_contents($this->config->getSoftStopFilePath(), $this->getPid());
+            if (false === $write) {
+                $this->echoLine(
+                    sprintf(
+                        'Error: Unable to write stop file at location "%s"',
+                        $this->config->getSoftStopFilePath()
+                    )
+                );
+            }
+            return false;
+        }
+
+        $this->echoLine('Notice: Already stopped');
+        return true;
     }
 
     /**
