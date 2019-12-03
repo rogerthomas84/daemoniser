@@ -288,6 +288,25 @@ abstract class DaemonAbstract
     }
 
     /**
+     * Should the daemon be stopping?
+     *
+     * @return bool
+     */
+    private function shouldStop()
+    {
+        if (file_exists($this->config->getSoftStopFilePath())) {
+            $rawPid = file_get_contents($this->config->getSoftStopFilePath());
+            if (false !== $rawPid && is_numeric($rawPid)) {
+                if (intval($rawPid) === $this->getPid()) {
+                    return true;
+                }
+            }
+            unlink($this->config->getSoftStopFilePath());
+        }
+        return false;
+    }
+
+    /**
      * Runs a loop of the `run()` function.
      */
     private function runWhilePidPresent()
@@ -297,20 +316,19 @@ abstract class DaemonAbstract
             $sleep = 0;
         }
         while ($this->getPid() !== 0) {
-            if (file_exists($this->config->getSoftStopFilePath())) {
-                $rawPid = file_get_contents($this->config->getSoftStopFilePath());
-                if (false !== $rawPid && is_numeric($rawPid)) {
-                    if (intval($rawPid) === $this->getPid()) {
-                        unlink($this->config->getSoftStopFilePath());
-                        $this->stop(true);
-                        exit(0);
-                    }
-                }
+            if ($this->shouldStop() === true) {
                 unlink($this->config->getSoftStopFilePath());
+                $this->stop(true);
+                exit(0);
             }
             $this->run();
             $this->checkLogFileSize();
             if ($sleep > 0) {
+                if ($this->shouldStop() === true) {
+                    unlink($this->config->getSoftStopFilePath());
+                    $this->stop(true);
+                    exit(0);
+                }
                 sleep($sleep);
             }
         }
