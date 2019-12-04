@@ -195,6 +195,7 @@ abstract class DaemonAbstract
             $processIdentificationNumberFile = fopen($this->config->getPidFilePath(), 'wb');
             fwrite($processIdentificationNumberFile, $processIdentificationNumber);
             fclose($processIdentificationNumberFile);
+            chmod($this->config->getPidFilePath(), 0777);
             exit(0);
         }
         posix_setsid();
@@ -279,10 +280,12 @@ abstract class DaemonAbstract
             }
         }
         copy($name, $newName);
+        chmod($newName, 0777);
         $f = @fopen($name, "r+");
         if ($f !== false) {
             ftruncate($f, 0);
             fclose($f);
+            chmod($name, 0777);
         }
         return true;
     }
@@ -426,6 +429,7 @@ abstract class DaemonAbstract
                     )
                 );
             }
+            chmod($this->config->getSoftStopFilePath(), 0777);
             return false;
         }
 
