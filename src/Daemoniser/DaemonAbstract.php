@@ -30,15 +30,15 @@ abstract class DaemonAbstract
     final public function execute(DaemonConfig $config, array $argv)
     {
         $this->config = $config;
-
-        if (!empty($config->getWhitelistedUsers())) {
+        $whitelistUsers = $config->getWhitelistedUsers();
+        if (!empty($whitelistUsers)) {
             $user = exec('whoami');
             if ($config->isUserWhitelisted($user) !== true) {
                 $this->echoLine(
                     sprintf(
-                        'Error: User "%s" is not whitelisted to run this command. Allowed: %s',
+                        'Error: User "%s" is not whitelisted to run this command. Allowed: "%s"',
                         $user,
-                        implode(', ', $config->getWhitelistedUsers())
+                        implode('", "', $config->getWhitelistedUsers())
                     )
                 );
                 exit(1);
