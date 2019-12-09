@@ -59,6 +59,11 @@ class DaemonConfig
     /**
      * @var array
      */
+    protected $whitelistedUsers = [];
+
+    /**
+     * @var array
+     */
     protected $iniSettings = [];
 
     /**
@@ -72,9 +77,11 @@ class DaemonConfig
      * @param int $sleepDuration (optional) default 5
      * @param int $maxLogFileSize (optional) defaults to 100MB ((1024*1024))
      * @param array $iniSettings (optional) the ini_set settings to send.
+     * @param array $whitelistedUsers (optional) an array of system user names to whitelist executing the daemon,
+     *                                           for example ['www-data', 'root']
      * @throws DaemonException
      */
-    public function __construct(DaemonAbstract $daemon, $errorLogFilePath=null, $infoLogFilePath=null, $pidFilePath=null, $softStopFilePath=null, $sleepDuration=5, $maxLogFileSize=self::ONE_HUNDRED_MB, $iniSettings=[])
+    public function __construct(DaemonAbstract $daemon, $errorLogFilePath=null, $infoLogFilePath=null, $pidFilePath=null, $softStopFilePath=null, $sleepDuration=5, $maxLogFileSize=self::ONE_HUNDRED_MB, $iniSettings=[], $whitelistedUsers=[])
     {
         $this->daemon = $daemon;
         $this->setSleepBetweenRuns($sleepDuration);
@@ -84,6 +91,44 @@ class DaemonConfig
         $this->setPidFilePath($pidFilePath);
         $this->setMaxLogFileSize($maxLogFileSize);
         $this->setIniSettings($iniSettings);
+        $this->setWhitelistedUsers($whitelistedUsers);
+    }
+
+    /**
+     * Set an array of system user names to whitelist executing the daemon, for example ['www-data', 'root']
+     *
+     * @param array $whitelistUsers
+     * @return $this
+     */
+    public function setWhitelistedUsers(array $whitelistUsers)
+    {
+        $this->whitelistedUsers = $whitelistUsers;
+        return $this;
+    }
+
+    /**
+     * Get an array of system user names to whitelist executing the daemon, for example ['www-data', 'root']
+     *
+     * @return array
+     */
+    public function getWhitelistedUsers()
+    {
+        return $this->whitelistedUsers;
+    }
+
+    /**
+     * Is a given user allowed to execute this command?
+     *
+     * @param string $username
+     * @return bool
+     */
+    public function isUserWhitelisted($username)
+    {
+        if (empty($this->whitelistedUsers)) {
+            return true;
+        }
+
+        return in_array($username, $this->getWhitelistedUsers());
     }
 
     /**

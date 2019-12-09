@@ -42,6 +42,10 @@ DaemonConfig constructor:
     * Optional, defaults to `100000000` bytes, (100 MB)
 8) `$iniSettings` / A key => value array of settings to use with `ini_set`. For example, `['memory_limit' => '1024MB']`
     * Optional, defaults to empty array
+8) `$whitelistedUsers` / An array containing the usernames allowed to execute this command.
+    * Optional, defaults to empty array, allowing any user.
+
+**All config options are also available `set` and `get` methods in the config object.**
 
 Usage
 -----
@@ -63,7 +67,7 @@ of a problem if you aren't running something that could result in data loss in t
 called.
 
 If you 'must' have an immediate stop, you'll have to implement the `canImmediatelyStop()` method in your daemons
-and return `true`.
+and return `true`. This should be avoided at all costs, as the stop process simply kills the `pid` immediately.
 
 Extending the commands:
 -----------------------
@@ -140,25 +144,43 @@ try {
     $daemon = new ExampleOneDaemon();
     $config = new DaemonConfig(
         $daemon,
-        null,
-        null,
-        null,
-        5,
+        '/path/to/error.log',
+        '/path/to/info.log',
+        '/path/to/mypid.pid',
+        '/path/to/stops/filename.stop',
+        10,
         DaemonConfig::ONE_HUNDRED_MB,
-        []
+        [
+            'memory_limit' => '512MB',
+            'display_startup_errors' => 1,
+            'display_errors' => 1,
+        ],
+        [
+            'www-data'
+        ]
     );
     $config->setMaxLogFileSize(1000);
-    // You can set the following here, or use the construct of the `DaemonConfig` to add them:
-    // $config->setPidFilePath('/path/to/pid/file.pid');
+    /**
+     * Alternatively you can elect to set them via set methods. If you chose this route, you only need to explicitely
+     * pass an instance of the daemon.
+     */
+    // $config = new DaemonConfig($daemon);
+    // $config->setErrorLogFilePath('/path/to/error.log');
     // $config->setInfoLogFilePath('/path/to/info.log');
-    // $config->setErrorLogFilePath('/path/to/info.log');
+    // $config->setPidFilePath('/path/to/pid/filename.pid');
+    // $config->setSoftStopFilePath('/path/to/stops/filename.stop');
     // $config->setSleepBetweenRuns(10); // Sleep for 10 seconds between calls to `run()`
-    // $config->setMaxLogFileSize(2000000); // Set the max log file size to 2,000,000 bytes before being rotated
+    // $config->setMaxLogFileSize(100000000); // Set the max log file size to 2,000,000 bytes before being rotated
     // $config->setIniSettings(
     //     [
     //         'memory_limit' => '512MB',
     //         'display_startup_errors' => 1,
     //         'display_errors' => 1,
+    //     ]
+    // );
+    // $config->setWhitelistedUsers(
+    //     [
+    //         'www-data'
     //     ]
     // );
 

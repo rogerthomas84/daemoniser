@@ -30,6 +30,21 @@ abstract class DaemonAbstract
     final public function execute(DaemonConfig $config, array $argv)
     {
         $this->config = $config;
+
+        if (!empty($config->getWhitelistedUsers())) {
+            $user = exec('whoami');
+            if ($config->isUserWhitelisted($user) !== true) {
+                $this->echoLine(
+                    sprintf(
+                        'Error: User "%s" is not whitelisted to run this command. Allowed: %s',
+                        $user,
+                        implode(', ', $config->getWhitelistedUsers())
+                    )
+                );
+                exit(1);
+            }
+        }
+
         if ($config->getErrorLogFilePath() === $config->getInfoLogFilePath()) {
             $this->echoLine('Error: Error log file and info log file paths cannot be the same.');
             exit(1);
